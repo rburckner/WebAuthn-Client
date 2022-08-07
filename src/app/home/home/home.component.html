@@ -1,0 +1,75 @@
+<div class="content" role="main">
+  <!-- Highlight Card -->
+  <div class="card highlight-card card-small">WebAuthn Demo</div>
+  <div *ngIf="!authService.hasCredentialsInNavigator">
+    Credentials not available
+  </div>
+  <div
+    *ngIf="authService.hasCredentialsInNavigator"
+    [formGroup]="registrationForm"
+  >
+    <div>
+      <!-- Registration -->
+      <h2>Registration</h2>
+      <input
+        placeholder="Display name"
+        aria-label="Display Name"
+        formControlName="displayName"
+        (keyup)="regError = ''"
+      />
+      <button
+        color="primary"
+        (click)="startRegistration(registrationForm)"
+        [disabled]="registrationForm.invalid || regError !== ''"
+      >
+        Register
+      </button>
+      <div
+        *ngIf="
+          registrationForm.dirty &&
+          registrationForm.get('displayName')?.hasError('required')
+        "
+      >
+        Display name is required.
+      </div>
+      <div *ngIf="registrationForm.get('displayName')?.hasError('minlength')">
+        Display name length must be {{ displayNameMinLength }} characters.
+      </div>
+      <div *ngIf="regError">{{ regError }}</div>
+    </div>
+  </div>
+  <div
+    *ngIf="authService.hasCredentialsInNavigator"
+    [formGroup]="authenticationForm"
+  >
+    <div>
+      <!-- Authentication -->
+      <h2>Authentication</h2>
+      <input
+        placeholder="Display name"
+        aria-label="Display Name"
+        formControlName="displayName"
+        (keyup)="authError = ''"
+      />
+      <button
+        color="primary"
+        (click)="startAuthentication(authenticationForm)"
+        [disabled]="authenticationForm.invalid || authError !== ''"
+      >
+        Authenticate
+      </button>
+      <div
+        *ngIf="
+          authenticationForm.dirty &&
+          authenticationForm.get('displayName')?.hasError('required')
+        "
+      >
+        Display name is required.
+      </div>
+      <div *ngIf="authenticationForm.get('displayName')?.hasError('minlength')">
+        Display name length must be {{ displayNameMinLength }} characters.
+      </div>
+      <div *ngIf="authError">{{ authError }}</div>
+    </div>
+  </div>
+</div>
