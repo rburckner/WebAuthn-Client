@@ -1,43 +1,39 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable, map, catchError, tap, async } from 'rxjs';
-import {
-  IAuthenticationResponse,
-  IDisplayName,
-  IRegistrationRequestSubmit,
-} from '../../interfaces/authentication.interface';
-import {
-  IPublicKeyCredentialAssertion,
-  IPublicKeyCredentialAttestation,
-  IPublicKeyCredentialCreationOptions,
-  IPublicKeyCredentialRequestOptionsAsStrings,
-} from '../../interfaces/webauthn.interface';
-import {
-  tranformPublicKeyCredentialAssertionBuffersToBase64,
-  tranformPublicKeyCredentialAttestationBuffersToBase64,
-  transformPublicKeyCredentialCreationOptionsStringsToBuffers,
-  transformPublicKeyCredentialRequestOptionsStringsToBuffers,
-} from '../../helpers/webauthn';
+import { Observable, map, catchError, tap } from 'rxjs';
+
 import { URLs } from './authentication.static';
+import { IAuthenticationResponse } from '../../interfaces/authentication.interface';
+import {
+  pkCredAssertionBuffersToBase64Url,
+  pkCredAttestationBuffersToBase64Url,
+  pkCredCreationOptsStringsToBuffers,
+  pkCredReqOptsStringsToBuffers,
+} from '../../helpers/webauthn';
 import { transformError } from 'src/app/helpers/transformError';
+import { IPublicKeyCredentialAssertion } from 'src/app/interfaces/webauthn/publicKeyCredentialAssertion.interface';
+import {
+  IPublicKeyCredentialCreationOptions,
+  IPublicKeyCredentialCreationOptionsRequestResponse,
+  IPublicKeyCredentialRequestOptions,
+} from 'src/app/interfaces/webauthn/publicKeyCredentialCreation.interface';
 
 @Injectable({
   providedIn: 'root',
 })
 export class AuthenticationService {
+  userId: string = '';
   public readonly hasCredentialsInNavigator: boolean =
     'credentials' in navigator;
   constructor(private http: HttpClient) {}
 
   doAuthenticationAssertion(
-    displayName: string,
     credential: IPublicKeyCredentialAssertion
   ): Observable<void> {
     return this.http
       .post<IAuthenticationResponse>(URLs.v1.webauthnAuthenticateAssert, {
-        displayName,
-        credential:
-          tranformPublicKeyCredentialAssertionBuffersToBase64(credential),
+        ...pkCredAssertionBuffersToBase64Url(credential),
+        userId: this.userId,
       })
       .pipe(
         map((result) => {
@@ -48,29 +44,22 @@ export class AuthenticationService {
       );
   }
 
-  doAuthenticationRequest(
-    displayName: IDisplayName
-  ): Observable<PublicKeyCredentialRequestOptions> {
+  doAuthenticationRequest(): Observable<PublicKeyCredentialRequestOptions> {
     return this.http
-      .post<IPublicKeyCredentialRequestOptionsAsStrings>(
+      .post<IPublicKeyCredentialRequestOptions>(
         URLs.v1.webauthnAuthenticateRequest,
-        displayName
+        { userId: this.userId }
       )
-      .pipe(
-        map(transformPublicKeyCredentialRequestOptionsStringsToBuffers),
-        catchError(transformError)
-      );
+      .pipe(map(pkCredReqOptsStringsToBuffers), catchError(transformError));
   }
 
-  doRegisterAttestation(
-    displayName: string,
-    credential: IPublicKeyCredentialAttestation
-  ): Observable<void> {
+  doRegisterAttestation(credential: Credential): Observable<void> {
     return this.http
       .post<IAuthenticationResponse>(URLs.v1.webauthnRegisterAttest, {
-        displayName,
-        credential:
-          tranformPublicKeyCredentialAttestationBuffersToBase64(credential),
+        ...pkCredAttestationBuffersToBase64Url(
+          credential as PublicKeyCredential
+        ),
+        userId: this.userId,
       })
       .pipe(
         tap(() => {
@@ -86,16 +75,21 @@ export class AuthenticationService {
       );
   }
 
-  doRegisterRequest(
-    request: IRegistrationRequestSubmit
-  ): Observable<PublicKeyCredentialCreationOptions> {
+  doRegisterRequest(): Observable<IPublicKeyCredentialCreationOptionsRequestResponse> {
     return this.http
-      .post<IPublicKeyCredentialCreationOptions>(
-        URLs.v1.webauthnRegisterRequest,
-        request
+      .get<IPublicKeyCredentialCreationOptionsRequestResponse>(
+        URLs.v1.webauthnRegisterRequest
       )
       .pipe(
-        map(transformPublicKeyCredentialCreationOptionsStringsToBuffers),
+        map((response) => {
+          this.userId = response.userId;
+          return {
+            ...response,
+            publicKey: pkCredCreationOptsStringsToBuffers(
+              response.publicKey as IPublicKeyCredentialCreationOptions
+            ),
+          };
+        }),
         catchError(transformError)
       );
   }

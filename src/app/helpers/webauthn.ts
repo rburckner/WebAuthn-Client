@@ -1,45 +1,39 @@
+import { IAuthenticatorAssertionResponse } from '../interfaces/webauthn/authenticatorAssertion.interface';
+import { IAuthenticatorAttestationResponse } from '../interfaces/webauthn/authenticatorAttestation.interface';
 import {
-  IPublicKeyCredentialAttestation,
-  IPublicKeyCredentialAttestationAsStrings,
-  IPublicKeyCredentialCreationOptions,
-  IPublicKeyCredentialRequestOptionsAsStrings,
   IPublicKeyCredentialAssertion,
   IPublicKeyCredentialAssertionAsStrings,
-} from '../interfaces/webauthn.interface';
-import { ArrayBufferToBase64, Base64ToArrayBuffer } from './base64';
+} from '../interfaces/webauthn/publicKeyCredentialAssertion.interface';
+import { IPublicKeyCredentialAttestationAsStrings } from '../interfaces/webauthn/publicKeyCredentialAttestation.interface';
+import {
+  IPublicKeyCredentialCreationOptions,
+  IPublicKeyCredentialRequestOptions,
+} from '../interfaces/webauthn/publicKeyCredentialCreation.interface';
+import { ArrayBufferToBase64Url, Base64UrlToArrayBuffer } from './base64';
 
-export function transformPublicKeyCredentialCreationOptionsStringsToBuffers(
-  opts: IPublicKeyCredentialCreationOptions
-): PublicKeyCredentialCreationOptions {
-  return {
-    ...opts,
-    challenge: Base64ToArrayBuffer(opts.challenge),
-    excludeCredentials: opts.excludeCredentials?.map((credential) => {
-      return {
-        ...credential,
-        id: Base64ToArrayBuffer(credential.id),
-      };
-    }),
-    user: { ...opts.user, id: Base64ToArrayBuffer(opts.user.id) },
-  };
-}
-export function tranformPublicKeyCredentialAssertionBuffersToBase64(
+export function pkCredAssertionBuffersToBase64Url(
   credential: IPublicKeyCredentialAssertion
 ): IPublicKeyCredentialAssertionAsStrings {
+  const response = credential.response as IAuthenticatorAssertionResponse;
   const result: IPublicKeyCredentialAssertionAsStrings = {
     ...credential,
     authenticatorAttachment: credential.authenticatorAttachment,
     id: credential.id,
-    rawId: ArrayBufferToBase64(credential.rawId),
     response: {
-      ...credential.response,
-      authenticatorData: ArrayBufferToBase64(
-        credential.response.authenticatorData
+      authenticatorData: ArrayBufferToBase64Url(response.authenticatorData),
+      clientDataJSON: ArrayBufferToBase64Url(
+        credential.response.clientDataJSON
       ),
-      clientDataJSON: ArrayBufferToBase64(credential.response.clientDataJSON),
-      signature: ArrayBufferToBase64(credential.response.signature),
-      userHandle: credential.response.userHandle
-        ? ArrayBufferToBase64(credential.response.userHandle)
+      publicKey: response.getPublicKey
+        ? ArrayBufferToBase64Url(response.getPublicKey())
+        : undefined,
+      publicKeyAlgorithm: response.getPublicKeyAlgorithm
+        ? response.getPublicKeyAlgorithm()
+        : undefined,
+      signature: ArrayBufferToBase64Url(credential.response.signature),
+      transports: response.getTransports ? response.getTransports() : undefined,
+      userHandle: response.userHandle
+        ? ArrayBufferToBase64Url(response.userHandle)
         : undefined,
     },
     type: credential.type,
@@ -47,45 +41,66 @@ export function tranformPublicKeyCredentialAssertionBuffersToBase64(
   return result;
 }
 
-export function tranformPublicKeyCredentialAttestationBuffersToBase64(
-  credential: IPublicKeyCredentialAttestation
+export function pkCredAttestationBuffersToBase64Url(
+  credential: PublicKeyCredential
 ): IPublicKeyCredentialAttestationAsStrings {
+  const response = credential.response as IAuthenticatorAttestationResponse;
+  const { attestationObject, clientDataJSON } = response;
+  const clientExtensionResults = credential.getClientExtensionResults();
   const result: IPublicKeyCredentialAttestationAsStrings = {
     ...credential,
-    authenticatorAttachment: credential.authenticatorAttachment,
-    clientExtensionResults: credential.getClientExtensionResults(),
+    clientExtensionResults: Object.keys(clientExtensionResults).length
+      ? clientExtensionResults
+      : undefined,
     id: credential.id,
-    rawId: ArrayBufferToBase64(credential.rawId),
     response: {
-      ...credential.response,
-      attestationObject: ArrayBufferToBase64(
-        credential.response.attestationObject
-      ),
-      authenticatorData: ArrayBufferToBase64(
-        credential.response.getAuthenticatorData()
-      ),
-      clientDataJSON: ArrayBufferToBase64(credential.response.clientDataJSON),
-      publicKey: ArrayBufferToBase64(credential.response.getPublicKey()),
-      publicKeyAlgorithm: credential.response.getPublicKeyAlgorithm(),
-      transports: credential.response.getTransports(),
+      attestationObject: ArrayBufferToBase64Url(attestationObject),
+      clientDataJSON: ArrayBufferToBase64Url(clientDataJSON),
+
+      authenticatorData: response.getAuthenticatorData
+        ? ArrayBufferToBase64Url(response.getAuthenticatorData())
+        : undefined,
+      publicKey: response.getPublicKey
+        ? ArrayBufferToBase64Url(response.getPublicKey())
+        : undefined,
+      publicKeyAlgorithm: response.getPublicKeyAlgorithm
+        ? response.getPublicKeyAlgorithm()
+        : undefined,
+      transports: response.getTransports ? response.getTransports() : [],
     },
     type: credential.type,
   };
   return result;
 }
 
-export function transformPublicKeyCredentialRequestOptionsStringsToBuffers(
-  opts: IPublicKeyCredentialRequestOptionsAsStrings
+export function pkCredCreationOptsStringsToBuffers(
+  opts: IPublicKeyCredentialCreationOptions
+): PublicKeyCredentialCreationOptions {
+  return {
+    ...opts,
+    challenge: Base64UrlToArrayBuffer(opts.challenge),
+    excludeCredentials: opts.excludeCredentials?.map((credential) => {
+      return {
+        ...credential,
+        id: Base64UrlToArrayBuffer(credential.id),
+      };
+    }),
+    user: { ...opts.user, id: Base64UrlToArrayBuffer(opts.user.id) },
+  };
+}
+
+export function pkCredReqOptsStringsToBuffers(
+  opts: IPublicKeyCredentialRequestOptions
 ): PublicKeyCredentialRequestOptions {
   const allowCredentials = opts.allowCredentials.map((credential) => {
     return {
       ...credential,
-      id: Base64ToArrayBuffer(credential.id),
+      id: Base64UrlToArrayBuffer(credential.id),
     };
   });
   return {
     ...opts,
-    challenge: Base64ToArrayBuffer(opts.challenge),
+    challenge: Base64UrlToArrayBuffer(opts.challenge),
     allowCredentials,
   };
 }

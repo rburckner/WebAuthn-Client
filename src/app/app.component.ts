@@ -13,6 +13,7 @@ export class AppComponent implements OnInit, OnDestroy {
   subscriptions: Subscription[] = [];
 
   constructor(public media: MediaObserver, public uiService: UiService) {}
+
   ngOnInit(): void {
     this.subscriptions.push(
       this.media.asObservable().subscribe({
@@ -26,6 +27,7 @@ export class AppComponent implements OnInit, OnDestroy {
       })
     );
   }
+
   ngOnDestroy(): void {
     this.subscriptions.forEach((subscription) => subscription.unsubscribe());
   }
