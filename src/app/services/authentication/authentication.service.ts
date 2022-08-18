@@ -26,6 +26,7 @@ import {
   providedIn: 'root',
 })
 export class AuthenticationService {
+  token: string = '';
   userId: string = '';
   public readonly hasCredentialsInNavigator: boolean =
     'credentials' in navigator;
@@ -42,7 +43,7 @@ export class AuthenticationService {
       .pipe(
         map((result) => {
           // save to some observable
-          console.log(result);
+          this.token = result.token;
           return;
         }),
         catchError(transformError)
@@ -65,7 +66,7 @@ export class AuthenticationService {
         }),
         map((result) => {
           // save to some observable
-          console.log(result);
+          this.token = result.token;
           return;
         }),
         catchError(transformError)
@@ -89,6 +90,10 @@ export class AuthenticationService {
         }),
         catchError(transformError)
       );
+  }
+
+  getToken(): string {
+    return this.token;
   }
 
   startAuthenticationRequest(): Observable<PublicKeyCredentialRequestOptions> {
