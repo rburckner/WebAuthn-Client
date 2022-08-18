@@ -1,5 +1,6 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { MediaObserver } from '@angular/flex-layout';
+import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { Subscription } from 'rxjs';
 
 import { UiService } from 'src/app/services/ui/ui.service';
@@ -12,23 +13,26 @@ import { AuthenticationService } from 'src/app/services/authentication/authentic
   styleUrls: ['./home.component.scss'],
 })
 export class HomeComponent implements OnInit, OnDestroy {
+  nonce: string = '';
   subscriptions: Subscription[] = [];
-
+  nonceForm = new FormGroup({
+    nonce: new FormControl('', Validators.required),
+  });
   constructor(
     public media: MediaObserver,
     protected authService: AuthenticationService,
     private uiService: UiService
   ) {}
 
-  ngOnInit(): void {
-    // browser.pkcs11
-  }
+  ngOnInit(): void {}
 
   ngOnDestroy(): void {
     this.subscriptions.forEach((subscription) => subscription.unsubscribe());
   }
 
-  assertAuthentication(publicKey: PublicKeyCredentialRequestOptions): void {
+  private assertAuthentication(
+    publicKey: PublicKeyCredentialRequestOptions
+  ): void {
     navigator.credentials
       .get({ publicKey })
       .then((credential) => {
@@ -47,11 +51,11 @@ export class HomeComponent implements OnInit, OnDestroy {
       .catch((error) => this.uiService.showToast(error.message));
   }
 
-  startAuthentication(): void {
+  requestNonce(): void {
     this.subscriptions.push(
-      this.authService.doAuthenticationRequest().subscribe({
-        next: (publicKey) => {
-          this.assertAuthentication(publicKey);
+      this.authService.requestRegistrationNonce().subscribe({
+        next: ({ nonce }) => {
+          this.nonce = nonce;
         },
         error: (error) => {
           this.uiService.showToast(error.message);
@@ -68,7 +72,7 @@ export class HomeComponent implements OnInit, OnDestroy {
       .then((credential) => {
         if (credential) {
           this.subscriptions.push(
-            this.authService.doRegisterAttestation(credential).subscribe({
+            this.authService.attestCredential(credential).subscribe({
               next: () => {
                 this.uiService.showToast('success');
               },
@@ -82,6 +86,32 @@ export class HomeComponent implements OnInit, OnDestroy {
       .catch((error) => {
         this.uiService.showToast(error.message);
       });
+  }
+
+  startAuthentication(): void {
+    this.subscriptions.push(
+      this.authService.startAuthenticationRequest().subscribe({
+        next: (publicKey) => {
+          this.assertAuthentication(publicKey);
+        },
+        error: (error) => {
+          this.uiService.showToast(error.message);
+        },
+      })
+    );
+  }
+
+  startAuthenticationWithNonce(nonce: string) {
+    this.subscriptions.push(
+      this.authService.startAuthenticationWithNonce(nonce).subscribe({
+        next: (publicKey) => {
+          this.assertAuthentication(publicKey);
+        },
+        error: (error) => {
+          this.uiService.showToast(error.message);
+        },
+      })
+    );
   }
 
   startRegistration(): void {

@@ -20,6 +20,13 @@ export interface IPublicKeyCredentialCreationOptionsRequestResponse {
   userId: string;
 }
 
+export interface IPublicKeyCredentialRequestOptionsRequestResponse {
+  publicKey:
+    | IPublicKeyCredentialRequestOptions
+    | PublicKeyCredentialRequestOptions;
+  userId: string;
+}
+
 export interface IPublicKeyCredentialRequestOptions
   extends Omit<
     PublicKeyCredentialRequestOptions,

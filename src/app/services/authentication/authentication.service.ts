@@ -1,9 +1,12 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable, map, catchError, tap } from 'rxjs';
+import { Observable, map, catchError, tap, mergeMap } from 'rxjs';
 
 import { URLs } from './authentication.static';
-import { IAuthenticationResponse } from '../../interfaces/authentication.interface';
+import {
+  IAuthenticationResponse,
+  IRegistrationNonce,
+} from '../../interfaces/authentication.interface';
 import {
   pkCredAssertionBuffersToBase64Url,
   pkCredAttestationBuffersToBase64Url,
@@ -16,6 +19,7 @@ import {
   IPublicKeyCredentialCreationOptions,
   IPublicKeyCredentialCreationOptionsRequestResponse,
   IPublicKeyCredentialRequestOptions,
+  IPublicKeyCredentialRequestOptionsRequestResponse,
 } from 'src/app/interfaces/webauthn/publicKeyCredentialCreation.interface';
 
 @Injectable({
@@ -38,22 +42,14 @@ export class AuthenticationService {
       .pipe(
         map((result) => {
           // save to some observable
+          console.log(result);
           return;
         }),
         catchError(transformError)
       );
   }
 
-  doAuthenticationRequest(): Observable<PublicKeyCredentialRequestOptions> {
-    return this.http
-      .post<IPublicKeyCredentialRequestOptions>(
-        URLs.v1.webauthnAuthenticateRequest,
-        { userId: this.userId }
-      )
-      .pipe(map(pkCredReqOptsStringsToBuffers), catchError(transformError));
-  }
-
-  doRegisterAttestation(credential: Credential): Observable<void> {
+  attestCredential(credential: Credential): Observable<void> {
     return this.http
       .post<IAuthenticationResponse>(URLs.v1.webauthnRegisterAttest, {
         ...pkCredAttestationBuffersToBase64Url(
@@ -63,12 +59,13 @@ export class AuthenticationService {
       })
       .pipe(
         tap(() => {
-          if (credential.type !== 'public-key') {
+          if (credential.type === 'password') {
             navigator.credentials.store(credential);
           }
         }),
         map((result) => {
           // save to some observable
+          console.log(result);
           return;
         }),
         catchError(transformError)
@@ -92,5 +89,42 @@ export class AuthenticationService {
         }),
         catchError(transformError)
       );
+  }
+
+  startAuthenticationRequest(): Observable<PublicKeyCredentialRequestOptions> {
+    return this.http
+      .post<IPublicKeyCredentialRequestOptions>(
+        URLs.v1.webauthnAuthenticateRequest,
+        { userId: this.userId }
+      )
+      .pipe(map(pkCredReqOptsStringsToBuffers), catchError(transformError));
+  }
+
+  startAuthenticationWithNonce(
+    nonce: string
+  ): Observable<PublicKeyCredentialRequestOptions> {
+    return this.http
+      .post<IPublicKeyCredentialRequestOptionsRequestResponse>(
+        URLs.v1.webauthnAuthenticateRequestFromNonce,
+        { nonce }
+      )
+      .pipe(
+        tap(({ userId }) => {
+          this.userId = userId;
+        }),
+        map(({ publicKey }) => {
+          return publicKey as IPublicKeyCredentialRequestOptions;
+        }),
+        map(pkCredReqOptsStringsToBuffers),
+        catchError(transformError)
+      );
+  }
+
+  requestRegistrationNonce(): Observable<IRegistrationNonce> {
+    return this.http
+      .post<IRegistrationNonce>(URLs.v1.nonceRegistrationRequest, {
+        userId: this.userId,
+      })
+      .pipe(catchError(transformError));
   }
 }

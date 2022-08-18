@@ -10,11 +10,6 @@
       <h2>Registration</h2>
       <button color="primary" (click)="startRegistration()">Register</button>
     </div>
-  </div>
-  <div *ngIf="authService.userId">
-    <h4>UserId: {{ authService.userId }}</h4>
-  </div>
-  <div *ngIf="authService.hasCredentialsInNavigator">
     <div>
       <!-- Authentication -->
       <h2>Authentication</h2>
@@ -22,5 +17,27 @@
         Authenticate
       </button>
     </div>
+    <div *ngIf="authService.userId">
+      <!-- Nonce Request -->
+      <h2>Nonce Request</h2>
+      <button color="primary" (click)="requestNonce()">Request</button>
+      <div *ngIf="nonce">
+        <h4>Nonce: {{ nonce }}</h4>
+      </div>
+    </div>
+    <div *ngIf="authService.hasCredentialsInNavigator" [formGroup]="nonceForm">
+      <!-- Nonce Register -->
+      <h2>Nonce Register</h2>
+      <input
+        placeholder="Enter nonce to register"
+        aria-label="Nonce"
+        formControlName="nonce"
+        #nonceInput
+        (keyup.enter)="startAuthenticationWithNonce(nonceInput.value)"
+      />
+    </div>
+  </div>
+  <div *ngIf="authService.userId">
+    <h4>UserId: {{ authService.userId }}</h4>
   </div>
 </div>

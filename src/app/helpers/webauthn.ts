@@ -90,17 +90,17 @@ export function pkCredCreationOptsStringsToBuffers(
 }
 
 export function pkCredReqOptsStringsToBuffers(
-  opts: IPublicKeyCredentialRequestOptions
+  publicKey: IPublicKeyCredentialRequestOptions
 ): PublicKeyCredentialRequestOptions {
-  const allowCredentials = opts.allowCredentials.map((credential) => {
+  const allowCredentials = publicKey.allowCredentials.map((credential) => {
     return {
       ...credential,
       id: Base64UrlToArrayBuffer(credential.id),
     };
   });
   return {
-    ...opts,
-    challenge: Base64UrlToArrayBuffer(opts.challenge),
+    ...publicKey,
+    challenge: Base64UrlToArrayBuffer(publicKey.challenge),
     allowCredentials,
   };
 }
