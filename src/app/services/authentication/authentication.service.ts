@@ -44,6 +44,7 @@ export class AuthenticationService {
         map((result) => {
           // save to some observable
           this.token = result.token;
+          console.debug(this.token);
           return;
         }),
         catchError(transformError)
@@ -67,6 +68,7 @@ export class AuthenticationService {
         map((result) => {
           // save to some observable
           this.token = result.token;
+          console.debug(this.token);
           return;
         }),
         catchError(transformError)
@@ -116,6 +118,7 @@ export class AuthenticationService {
       .pipe(
         tap(({ userId }) => {
           this.userId = userId;
+          // parse the access token for sub = userId!
         }),
         map(({ publicKey }) => {
           return publicKey as IPublicKeyCredentialRequestOptions;
@@ -127,9 +130,7 @@ export class AuthenticationService {
 
   requestRegistrationNonce(): Observable<IRegistrationNonce> {
     return this.http
-      .post<IRegistrationNonce>(URLs.v1.nonceRegistrationRequest, {
-        userId: this.userId,
-      })
+      .get<IRegistrationNonce>(URLs.v1.nonceRegistrationRequest)
       .pipe(catchError(transformError));
   }
 }

@@ -7,12 +7,13 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { HomeComponent } from './home/home/home.component';
 import { AuthenticationService } from './services/authentication/authentication.service';
 import { ReactiveFormsModule } from '@angular/forms';
-import { HttpClientModule } from '@angular/common/http';
+import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
 import { FlexLayoutModule } from '@angular/flex-layout';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatToolbarModule } from '@angular/material/toolbar';
+import { AuthenticationInterceptor } from './services/authentication/authentication.interceptor';
 
 @NgModule({
   declarations: [AppComponent, HomeComponent],
@@ -28,7 +29,14 @@ import { MatToolbarModule } from '@angular/material/toolbar';
     MatSnackBarModule,
     MatToolbarModule,
   ],
-  providers: [AuthenticationService],
+  providers: [
+    AuthenticationService,
+    {
+      provide: HTTP_INTERCEPTORS,
+      useClass: AuthenticationInterceptor,
+      multi: true,
+    },
+  ],
   bootstrap: [AppComponent],
 })
 export class AppModule {}

@@ -36,8 +36,8 @@
         (keyup.enter)="startAuthenticationWithNonce(nonceInput.value)"
       />
     </div>
-  </div>
-  <div *ngIf="authService.userId">
-    <h4>UserId: {{ authService.userId }}</h4>
+    <div *ngIf="authService.userId">
+      <h4>UserId: {{ authService.userId }}</h4>
+    </div>
   </div>
 </div>
